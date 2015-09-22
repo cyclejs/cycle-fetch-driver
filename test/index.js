@@ -1,16 +1,20 @@
+import { parse as parseUrl } from 'url'
 import test from 'tape'
 import { Rx } from '@cycle/core'
 import { makeFetchDriver } from '../src'
 
 var originalFetch, fetches
 
-function mockFetch (url, options) {
+function mockFetch (input, init) {
+  let url = input.url || input
+  let resource = parseUrl(url).pathname.replace('/', '')
   fetches.push(Array.prototype.slice.apply(arguments))
   return Promise.resolve({
     url,
     status: 200,
     statusText: 'OK',
-    ok: true
+    ok: true,
+    data: resource
   })
 }
 
@@ -51,7 +55,21 @@ test('fetchDriver', t => {
 test('fetchDriver multiple requests', t => {
   let complete = 0
   function onComplete () {
-    if (complete === 3) t.end()
+    if (complete === 7) t.end()
+  }
+  function fetchResource (response$$, resource) {
+    return response$$
+      .filter(response$ => response$.key === resource)
+      .subscribe(response$ => {
+        response$.subscribe(
+          response => {
+            t.equal(response.data, resource, `should return ${resource}`)
+            complete++
+          },
+          t.error,
+          onComplete
+        )
+      })
   }
 
   setup()
@@ -64,46 +82,25 @@ test('fetchDriver multiple requests', t => {
     key: 'resource2',
     url: 'http://api.test/resource2'
   }
-  let request$ = Rx.Observable.of(request1, request2)
+  let request$ = Rx.Observable.of(request1, request2, request1)
   let response$$ = fetchDriver(request$)
-  response$$
-    .filter(response$ => response$.key === 'resource1')
-    .subscribe(response$ => {
-      response$.subscribe(
-        response => {
-          t.equal(response.url, request1.url, 'should return resource1')
-          complete++
-        },
-        t.error,
-        onComplete
-      )
-    })
+  fetchResource(response$$, 'resource1')
   setTimeout(() => {
-    response$$
-      .filter(response$ => response$.key === 'resource1')
-      .subscribe(response$ => {
-        response$.subscribe(
-          response => {
-            t.equal(response.url, request1.url, 'should return resource1 again')
-            complete++
-          },
-          t.error,
-          onComplete
-        )
-      })
-    response$$
-      .filter(response$ => response$.key === 'resource2')
-      .subscribe(response$ => {
-        response$.subscribe(
-          response => {
-            t.equal(response.url, request2.url, 'should return resource2')
-            complete++
-          },
-          t.error,
-          onComplete
-        )
-      })
+    fetchResource(response$$, 'resource1')
+    fetchResource(response$$, 'resource2')
   }, 10)
+
+  response$$
+    .mergeAll()
+    .filter(response => response.url === request1.url)
+    .subscribe(
+      response => {
+        t.equal(response.data, 'resource1', 'should return resource1')
+        complete++
+      },
+      t.error,
+      onComplete
+    )
 })
 
 test('after', t => {
