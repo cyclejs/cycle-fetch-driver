@@ -1,5 +1,5 @@
-import { parse as parseUrl } from 'url'
 import test from 'tape'
+import { parse as parseUrl } from 'url'
 import { Rx } from '@cycle/core'
 import { makeFetchDriver } from '../src'
 
@@ -40,30 +40,38 @@ test('fetchDriver', t => {
   let url = 'http://api.test/resource'
   let fetchDriver = makeFetchDriver()
   let request$ = Rx.Observable.just({ url })
-  let response$$ = fetchDriver(request$)
-  response$$
+  fetchDriver(request$)
     .mergeAll()
-    .subscribe(response => {
-      t.equal(response.url, url)
-      t.equal(fetches.length, 1, 'should call fetch once')
-      t.deepEqual(fetches[0], [ 'http://api.test/resource', undefined ],
-        'should call fetch with url and no options')
-      t.end()
-    })
+    .toArray()
+    .subscribe(
+      responses => {
+        t.equal(responses.length, 1)
+        let response = responses[0]
+        t.equal(response.url, url)
+        t.equal(fetches.length, 1, 'should call fetch once')
+        t.deepEqual(fetches[0], [ 'http://api.test/resource', undefined ],
+          'should call fetch with url and no options')
+        t.end()
+      },
+      t.error
+    )
 })
 
 test('fetchDriver multiple requests', t => {
-  let complete = 0
+  let inflight = 4
   function onComplete () {
-    if (complete === 7) t.end()
+    if (!--inflight) t.end()
   }
-  function fetchResource (response$$, resource) {
+  function fetchResource (response$$, resource, count) {
     return response$$
       .byKey(resource)
+      .toArray()
       .subscribe(
-        response => {
-          t.equal(response.data, resource, `should return ${resource}`)
-          complete++
+        responses => {
+          t.equal(responses.length, count, `should get ${count} responses`)
+          responses.forEach(response => {
+            t.equal(response.data, resource, `should return ${resource}`)
+          })
         },
         t.error,
         onComplete
@@ -82,18 +90,21 @@ test('fetchDriver multiple requests', t => {
   }
   let request$ = Rx.Observable.of(request1, request2, request1)
   let response$$ = fetchDriver(request$)
-  fetchResource(response$$, 'resource1')
+  fetchResource(response$$, 'resource1', 2)
   setTimeout(() => {
-    fetchResource(response$$, 'resource1')
-    fetchResource(response$$, 'resource2')
+    fetchResource(response$$, 'resource1', 2)
+    fetchResource(response$$, 'resource2', 1)
   }, 10)
 
   response$$
     .byUrl(request1.url)
+    .toArray()
     .subscribe(
-      response => {
-        t.equal(response.data, 'resource1', 'should return resource1')
-        complete++
+      responses => {
+        t.equal(responses.length, 2, 'should get 2 responses')
+        responses.forEach(response => {
+          t.equal(response.data, 'resource1', 'should return resource1')
+        })
       },
       t.error,
       onComplete
