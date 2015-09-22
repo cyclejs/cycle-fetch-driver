@@ -4,7 +4,7 @@
   "description": "A Cycle.js Driver for making HTTP requests through fetch",
   "main": "src/index.js",
   "scripts": {
-    "standard": "standard",
+    "standard": "standard --global fetch",
     "pretest": "npm run standard",
     "test": "babel-node test/*.js | faucet"
   },
