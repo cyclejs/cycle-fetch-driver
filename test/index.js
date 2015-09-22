@@ -41,15 +41,15 @@ test('fetchDriver', t => {
   let fetchDriver = makeFetchDriver()
   let request$ = Rx.Observable.just({ url })
   let response$$ = fetchDriver(request$)
-  response$$.subscribe(response$ => {
-    response$.subscribe(response => {
+  response$$
+    .mergeAll()
+    .subscribe(response => {
       t.equal(response.url, url)
       t.equal(fetches.length, 1, 'should call fetch once')
       t.deepEqual(fetches[0], [ 'http://api.test/resource', undefined ],
         'should call fetch with url and no options')
       t.end()
     })
-  })
 })
 
 test('fetchDriver multiple requests', t => {
@@ -59,17 +59,15 @@ test('fetchDriver multiple requests', t => {
   }
   function fetchResource (response$$, resource) {
     return response$$
-      .filter(response$ => response$.key === resource)
-      .subscribe(response$ => {
-        response$.subscribe(
-          response => {
-            t.equal(response.data, resource, `should return ${resource}`)
-            complete++
-          },
-          t.error,
-          onComplete
-        )
-      })
+      .byKey(resource)
+      .subscribe(
+        response => {
+          t.equal(response.data, resource, `should return ${resource}`)
+          complete++
+        },
+        t.error,
+        onComplete
+      )
   }
 
   setup()
@@ -91,8 +89,7 @@ test('fetchDriver multiple requests', t => {
   }, 10)
 
   response$$
-    .mergeAll()
-    .filter(response => response.url === request1.url)
+    .byUrl(request1.url)
     .subscribe(
       response => {
         t.equal(response.data, 'resource1', 'should return resource1')

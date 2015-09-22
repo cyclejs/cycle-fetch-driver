@@ -1,6 +1,6 @@
 import { Rx } from '@cycle/core'
 
-function createResponse$ (request$) {
+function makeResponse$ (request$) {
   const fromPromise = Rx.Observable.fromPromise
   let response$ = request$
     .map(({ input, url, init }) => fromPromise(fetch(input || url, init)))
@@ -11,10 +11,25 @@ function createResponse$ (request$) {
   return response$
 }
 
+function byKey (key) {
+  return this
+    .filter(response$ => response$.key === key)
+    .mergeAll()
+}
+
+function byUrl (url) {
+  return this
+    .mergeAll()
+    .filter(response => response.url === url)
+}
+
 export function makeFetchDriver () {
   return function fetchDriver (request$) {
-    return request$
+    let response$$ = request$
       .groupBy(({ key }) => key)
-      .map(createResponse$)
+      .map(makeResponse$)
+    response$$.byKey = byKey.bind(response$$)
+    response$$.byUrl = byUrl.bind(response$$)
+    return response$$
   }
 }
