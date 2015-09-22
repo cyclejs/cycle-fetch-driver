@@ -111,6 +111,44 @@ test('fetchDriver multiple requests', t => {
     )
 })
 
+test('fetchDriver should support string requests', t => {
+  setup()
+  let fetchDriver = makeFetchDriver()
+  let request1 = 'http://api.test/resource1'
+  fetchDriver(Rx.Observable.just(request1))
+    .byKey(request1)
+    .toArray()
+    .subscribe(
+      responses => {
+        t.equal(responses.length, 1)
+        responses.forEach(response => {
+          t.equal(response.data, 'resource1', 'should return resource1')
+        })
+        t.end()
+      }
+    )
+})
+
+test('fetchDriver should support Request object', t => {
+  setup()
+  let fetchDriver = makeFetchDriver()
+  let request1 = {
+    url: 'http://api.test/resource1'
+  }
+  fetchDriver(Rx.Observable.just({ input: request1 }))
+    .byKey(request1.url)
+    .toArray()
+    .subscribe(
+      responses => {
+        t.equal(responses.length, 1)
+        responses.forEach(response => {
+          t.equal(response.data, 'resource1', 'should return resource1')
+        })
+        t.end()
+      }
+    )
+})
+
 test('after', t => {
   global.fetch = originalFetch
   t.end()

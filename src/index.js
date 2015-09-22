@@ -11,6 +11,16 @@ function makeResponse$ (request$) {
   return response$
 }
 
+function normalizeRequest (input) {
+  let request = typeof input === 'string'
+    ? { url: input }
+    : Object.assign({}, input)
+  if (!request.key) {
+    request.key = request.input && request.input.url || request.url
+  }
+  return request
+}
+
 function byKey (key) {
   return this
     .filter(response$ => response$.key === key)
@@ -26,6 +36,7 @@ function byUrl (url) {
 export function makeFetchDriver () {
   return function fetchDriver (request$) {
     let response$$ = request$
+      .map(normalizeRequest)
       .groupBy(({ key }) => key)
       .map(makeResponse$)
     response$$.byKey = byKey.bind(response$$)
