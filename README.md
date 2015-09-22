@@ -1,4 +1,4 @@
-# Cycle HTTP Driver
+# Cycle Fetch Driver
 
 A [Cycle.js](http://cycle.js.org) [Driver](http://cycle.js.org/drivers.html) for making HTTP requests, using the [Fetch API](https://fetch.spec.whatwg.org/).
 
