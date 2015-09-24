@@ -2,17 +2,16 @@
 
 A [Cycle.js](http://cycle.js.org) [Driver](http://cycle.js.org/drivers.html) for making HTTP requests, using the [Fetch API](https://fetch.spec.whatwg.org/).
 
-```
-npm install cycle-fetch-driver
-```
+## Install
 
-[![npm version](https://badge.fury.io/js/cycle-fetch-driver.svg)](http://badge.fury.io/js/cycle-fetch-driver)
+Only via git for now. I will publish this module on npm once I have a test suite. Pull requests welcome!
 
 ## Usage
 
 Basics:
 
 ```js
+import 'whatwg-fetch' // polyfill if you want to support older browsers
 import Cycle from '@cycle/core';
 import { makeFetchDriver } from 'cycle-fetch-driver';
 
@@ -75,3 +74,14 @@ function main(responses) {
   };
 }
 ```
+
+## Roadmap
+
+### v0.x
+ - Add tests
+ - Support hash changes
+ - Use cycle eslint config
+
+### v1.x
+ - Move to cycle.js org
+ - Publish on npm
