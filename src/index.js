@@ -1,3 +1,4 @@
+import assign from 'object-assign'
 import { Rx } from '@cycle/core'
 
 function makeResponse$ (request$) {
@@ -14,7 +15,7 @@ function makeResponse$ (request$) {
 function normalizeRequest (input) {
   let request = typeof input === 'string'
     ? { url: input }
-    : Object.assign({}, input)
+    : assign({}, input)
   if (!request.key) {
     request.key = request.input && request.input.url || request.url
   }
