@@ -3,13 +3,16 @@ import { parse as parseUrl } from 'url'
 import { Rx } from '@cycle/core'
 import { makeFetchDriver } from '../src'
 
-const { onNext, onCompleted } = Rx.ReactiveTest;
+const { onNext } = Rx.ReactiveTest
 let originalFetch, fetches
 
 function compareMessages (t, actual, expected) {
   t.equal(actual.length, expected.length, 'messages should be same length')
   expected.forEach((message, i) => {
-    t.ok(Rx.internals.isEqual(message, actual[i]), 'message should be equal')
+    t.ok(
+      Rx.internals.isEqual(actual[i], message),
+      `message should be equal. expected: ${message} actual: ${actual[i]}`
+    )
   })
 }
 
@@ -67,25 +70,26 @@ test('fetchDriver', t => {
 
 test('fetchDriver should support multiple requests', t => {
   setup()
-  let responseTicks = [
-    510,
-    500,
-    550
-  ]
+  const scheduler = new Rx.TestScheduler()
   const request1 = 'http://api.test/resource1'
   const request2 = 'http://api.test/resource2'
-  const scheduler = new Rx.TestScheduler()
-  const request$ = scheduler.createHotObservable(
-    onNext(300, request1),
-    onNext(400, request2),
-    onNext(500, request1),
-    onCompleted(600)
-  )
+  const requests = [
+    { ticks: 300, value: request1 },
+    { ticks: 400, value: request2 },
+    { ticks: 500, value: request1 }
+  ]
+  const responses = requests.map(request => (
+    { ticks: request.ticks + 120, value: request.value.split('/').pop() }
+  ))
+  let expected = []
+  const request$ = scheduler.createHotObservable.apply(scheduler, requests.map(
+    request => onNext(request.ticks, request.value)
+  ))
   const oldFetch = global.fetch
   global.fetch = (url, init) => {
-    return scheduler.createResolvedPromise(responseTicks.shift(), {
-      data: url.split('/').pop()
-    })
+    const response = responses.shift()
+    expected.push(response)
+    return scheduler.createResolvedPromise(response.ticks, response.value)
   }
   const fetchDriver = makeFetchDriver()
   const { messages } = scheduler.startWithCreate(() => (
@@ -93,10 +97,9 @@ test('fetchDriver should support multiple requests', t => {
       .mergeAll()
   ))
   compareMessages(t, messages, [
-    onNext(500, { data: 'resource2' }),
-    onNext(510, { data: 'resource1' }),
-    onNext(550, { data: 'resource1' }),
-    onCompleted(600)
+    onNext(420, 'resource1'),
+    onNext(520, 'resource2'),
+    onNext(620, 'resource1')
   ])
   global.fetch = oldFetch
   t.end()

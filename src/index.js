@@ -34,7 +34,7 @@ export function makeFetchDriver () {
       .map(normalizeRequest)
       .subscribe(
         request => {
-          let { input, url, init, key } = request
+          let { input, url, init } = request
           let response$ = Rx.Observable.fromPromise(fetch(input || url, init))
           response$.request = request
           response$$.onNext(response$)
