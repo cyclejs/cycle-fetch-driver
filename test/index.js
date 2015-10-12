@@ -3,11 +3,19 @@ import { parse as parseUrl } from 'url'
 import { Rx } from '@cycle/core'
 import { makeFetchDriver } from '../src'
 
-var originalFetch, fetches
+const { onNext, onCompleted } = Rx.ReactiveTest;
+let originalFetch, fetches
+
+function compareMessages (t, actual, expected) {
+  t.equal(actual.length, expected.length, 'messages should be same length')
+  expected.forEach((message, i) => {
+    t.ok(Rx.internals.isEqual(message, actual[i]), 'message should be equal')
+  })
+}
 
 function mockFetch (input, init) {
-  let url = input.url || input
-  let resource = parseUrl(url).pathname.replace('/', '')
+  const url = input.url || input
+  const resource = parseUrl(url).pathname.replace('/', '')
   fetches.push(Array.prototype.slice.apply(arguments))
   return Promise.resolve({
     url,
@@ -30,23 +38,23 @@ test('before', t => {
 
 test('makeFetchDriver', t => {
   setup()
-  let fetchDriver = makeFetchDriver()
+  const fetchDriver = makeFetchDriver()
   t.ok(typeof fetchDriver === 'function', 'should return a function')
   t.end()
 })
 
 test('fetchDriver', t => {
   setup()
-  let url = 'http://api.test/resource'
-  let fetchDriver = makeFetchDriver()
-  let request$ = Rx.Observable.just({ url })
+  const url = 'http://api.test/resource'
+  const fetchDriver = makeFetchDriver()
+  const request$ = Rx.Observable.just({ url })
   fetchDriver(request$)
     .mergeAll()
     .toArray()
     .subscribe(
       responses => {
         t.equal(responses.length, 1)
-        let response = responses[0]
+        const response = responses[0]
         t.equal(response.url, url)
         t.equal(fetches.length, 1, 'should call fetch once')
         t.deepEqual(fetches[0], [ 'http://api.test/resource', undefined ],
@@ -57,64 +65,47 @@ test('fetchDriver', t => {
     )
 })
 
-test('fetchDriver multiple requests', t => {
-  let inflight = 4
-  function onComplete () {
-    if (!--inflight) t.end()
-  }
-  function fetchResource (response$$, resource, count) {
-    return response$$
-      .byKey(resource)
-      .toArray()
-      .subscribe(
-        responses => {
-          t.equal(responses.length, count, `should get ${count} responses`)
-          responses.forEach(response => {
-            t.equal(response.data, resource, `should return ${resource}`)
-          })
-        },
-        t.error,
-        onComplete
-      )
-  }
-
+test('fetchDriver should support multiple requests', t => {
   setup()
-  let fetchDriver = makeFetchDriver()
-  let request1 = {
-    key: 'resource1',
-    url: 'http://api.test/resource1'
+  let responseTicks = [
+    510,
+    500,
+    550
+  ]
+  const request1 = 'http://api.test/resource1'
+  const request2 = 'http://api.test/resource2'
+  const scheduler = new Rx.TestScheduler()
+  const request$ = scheduler.createHotObservable(
+    onNext(300, request1),
+    onNext(400, request2),
+    onNext(500, request1),
+    onCompleted(600)
+  )
+  const oldFetch = global.fetch
+  global.fetch = (url, init) => {
+    return scheduler.createResolvedPromise(responseTicks.shift(), {
+      data: url.split('/').pop()
+    })
   }
-  let request2 = {
-    key: 'resource2',
-    url: 'http://api.test/resource2'
-  }
-  let request$ = Rx.Observable.of(request1, request2, request1)
-  let response$$ = fetchDriver(request$)
-  fetchResource(response$$, 'resource1', 2)
-  setTimeout(() => {
-    fetchResource(response$$, 'resource1', 2)
-    fetchResource(response$$, 'resource2', 1)
-  }, 10)
-
-  response$$
-    .byUrl(request1.url)
-    .toArray()
-    .subscribe(
-      responses => {
-        t.equal(responses.length, 2, 'should get 2 responses')
-        responses.forEach(response => {
-          t.equal(response.data, 'resource1', 'should return resource1')
-        })
-      },
-      t.error,
-      onComplete
-    )
+  const fetchDriver = makeFetchDriver()
+  const { messages } = scheduler.startWithCreate(() => (
+    fetchDriver(request$)
+      .mergeAll()
+  ))
+  compareMessages(t, messages, [
+    onNext(500, { data: 'resource2' }),
+    onNext(510, { data: 'resource1' }),
+    onNext(550, { data: 'resource1' }),
+    onCompleted(600)
+  ])
+  global.fetch = oldFetch
+  t.end()
 })
 
 test('fetchDriver should support string requests', t => {
   setup()
-  let fetchDriver = makeFetchDriver()
-  let request1 = 'http://api.test/resource1'
+  const fetchDriver = makeFetchDriver()
+  const request1 = 'http://api.test/resource1'
   fetchDriver(Rx.Observable.just(request1))
     .byKey(request1)
     .toArray()
@@ -131,8 +122,8 @@ test('fetchDriver should support string requests', t => {
 
 test('fetchDriver should support Request object', t => {
   setup()
-  let fetchDriver = makeFetchDriver()
-  let request1 = {
+  const fetchDriver = makeFetchDriver()
+  const request1 = {
     url: 'http://api.test/resource1'
   }
   fetchDriver(Rx.Observable.just({ input: request1 }))
@@ -147,6 +138,25 @@ test('fetchDriver should support Request object', t => {
         t.end()
       }
     )
+})
+
+test('fetchDriver should support multiple subscriptions', t => {
+  function checkFetchCount () {
+    t.equal(fetches.length, 1, 'should call fetch once')
+    if (++checkCount === 2) t.end()
+  }
+  setup()
+  let checkCount = 0
+  const url = 'http://api.test/resource'
+  const fetchDriver = makeFetchDriver()
+  const request$ = Rx.Observable.just({ url })
+  const responses$ = fetchDriver(request$)
+    .mergeAll()
+    .toArray()
+  responses$
+    .subscribe(checkFetchCount, t.error)
+  responses$
+    .subscribe(checkFetchCount, t.error)
 })
 
 test('after', t => {

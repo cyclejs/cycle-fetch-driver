@@ -1,17 +1,6 @@
 import assign from 'object-assign'
 import { Rx } from '@cycle/core'
 
-function makeResponse$ (request$) {
-  const fromPromise = Rx.Observable.fromPromise
-  let response$ = request$
-    .map(({ input, url, init }) => fromPromise(fetch(input || url, init)))
-    .mergeAll()
-    .replay(null, 1)
-  response$.connect()
-  response$.key = request$.key
-  return response$
-}
-
 function normalizeRequest (input) {
   let request = typeof input === 'string'
     ? { url: input }
@@ -22,26 +11,39 @@ function normalizeRequest (input) {
   return request
 }
 
-function byKey (key) {
-  return this
-    .filter(response$ => response$.key === key)
+function byKey (response$$, key) {
+  return response$$
+    .filter(response$ => response$.request.key === key)
     .mergeAll()
 }
 
-function byUrl (url) {
-  return this
+function byUrl (response$$, url) {
+  return response$$
+    .filter(response$ => {
+      let request = response$.request
+      let inputUrl = request.input && request.input.url || request.url
+      return inputUrl === url
+    })
     .mergeAll()
-    .filter(response => response.url === url)
 }
 
 export function makeFetchDriver () {
   return function fetchDriver (request$) {
-    let response$$ = request$
+    let response$$ = new Rx.ReplaySubject(1)
+    request$
       .map(normalizeRequest)
-      .groupBy(({ key }) => key)
-      .map(makeResponse$)
-    response$$.byKey = byKey.bind(response$$)
-    response$$.byUrl = byUrl.bind(response$$)
+      .subscribe(
+        request => {
+          let { input, url, init, key } = request
+          let response$ = Rx.Observable.fromPromise(fetch(input || url, init))
+          response$.request = request
+          response$$.onNext(response$)
+        },
+        response$$.onError.bind(response$$),
+        response$$.onCompleted.bind(response$$)
+      )
+    response$$.byKey = byKey.bind(null, response$$)
+    response$$.byUrl = byUrl.bind(null, response$$)
     return response$$
   }
 }
