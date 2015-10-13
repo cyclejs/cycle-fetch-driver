@@ -1,12 +1,13 @@
 {
-  "name": "cycle-fetch-driver",
+  "name": "@cycle/fetch",
   "version": "0.0.1",
   "description": "A Cycle.js Driver for making HTTP requests through fetch",
   "main": "src/index.js",
   "scripts": {
     "standard": "standard --global fetch",
     "pretest": "npm run standard",
-    "test": "babel-node test/*.js | faucet"
+    "test": "babel-node test/*.js | faucet",
+    "prepublish": "babel -d lib/ src/"
   },
   "repository": {
     "type": "git",
@@ -24,8 +25,10 @@
     "standard": "^5.3.1",
     "tape": "^4.2.0"
   },
+  "peerDependencies": {
+    "@cycle/core": "^3.1.0"
+  },
   "dependencies": {
-    "@cycle/core": "^3.1.0",
     "object-assign": "^4.0.1"
   }
 }
