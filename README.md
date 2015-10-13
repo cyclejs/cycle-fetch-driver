@@ -4,7 +4,9 @@ A [Cycle.js](http://cycle.js.org) [Driver](http://cycle.js.org/drivers.html) for
 
 ## Install
 
-Only via git for now. I will publish this module on npm once I have a test suite. Pull requests welcome!
+```sh
+npm install @cycle/fetch
+```
 
 ## Usage
 
@@ -74,14 +76,3 @@ function main(responses) {
   };
 }
 ```
-
-## Roadmap
-
-### v0.x
- - Add tests
- - Support hash changes
- - Use cycle eslint config
-
-### v1.x
- - Move to cycle.js org
- - Publish on npm
