@@ -59,7 +59,7 @@ function main(responses) {
   let request$ = Rx.Observable.just({
     key: 'hello',
     url: HELLO_URL
-  );
+  });
   let vtree$ = responses.Fetch
     .byKey('hello')
     .flatMap(res => res.text()) // We expect this to be "Hello World"
