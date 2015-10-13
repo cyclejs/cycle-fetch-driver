@@ -14,7 +14,6 @@ function normalizeRequest (input) {
 function byKey (response$$, key) {
   return response$$
     .filter(response$ => response$.request.key === key)
-    .mergeAll()
 }
 
 function byUrl (response$$, url) {
@@ -24,7 +23,6 @@ function byUrl (response$$, url) {
       let inputUrl = request.input && request.input.url || request.url
       return inputUrl === url
     })
-    .mergeAll()
 }
 
 export function makeFetchDriver () {

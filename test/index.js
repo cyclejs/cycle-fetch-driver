@@ -11,7 +11,7 @@ function compareMessages (t, actual, expected) {
   expected.forEach((message, i) => {
     t.ok(
       Rx.internals.isEqual(actual[i], message),
-      `message should be equal. expected: ${message} actual: ${actual[i]}`
+      'message should be equal'
     )
   })
 }
@@ -111,6 +111,7 @@ test('fetchDriver should support string requests', t => {
   const request1 = 'http://api.test/resource1'
   fetchDriver(Rx.Observable.just(request1))
     .byKey(request1)
+    .mergeAll()
     .toArray()
     .subscribe(
       responses => {
@@ -131,6 +132,7 @@ test('fetchDriver should support Request object', t => {
   }
   fetchDriver(Rx.Observable.just({ input: request1 }))
     .byKey(request1.url)
+    .mergeAll()
     .toArray()
     .subscribe(
       responses => {
@@ -170,6 +172,7 @@ test('byUrl should support request url', t => {
   const request$ = Rx.Observable.of(request1, request2)
   fetchDriver(request$)
     .byUrl(request2.url)
+    .mergeAll()
     .toArray()
     .subscribe(
       responses => {
@@ -189,6 +192,7 @@ test('byUrl should support input url', t => {
   const request$ = Rx.Observable.of(request1, request2)
   fetchDriver(request$)
     .byUrl(request2.input.url)
+    .mergeAll()
     .toArray()
     .subscribe(
       responses => {
