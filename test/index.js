@@ -162,6 +162,44 @@ test('fetchDriver should support multiple subscriptions', t => {
     .subscribe(checkFetchCount, t.error)
 })
 
+test('byUrl should support request url', t => {
+  setup()
+  const request1 = { url: 'http://api.test/resource1', key: 'resource1' }
+  const request2 = { url: 'http://api.test/resource2', key: 'resource2' }
+  const fetchDriver = makeFetchDriver()
+  const request$ = Rx.Observable.of(request1, request2)
+  fetchDriver(request$)
+    .byUrl(request2.url)
+    .toArray()
+    .subscribe(
+      responses => {
+        t.equal(responses.length, 1)
+        t.equal(responses[0].data, 'resource2')
+        t.end()
+      },
+      t.error
+    )
+})
+
+test('byUrl should support input url', t => {
+  setup()
+  const request1 = { input: { url: 'http://api.test/resource1' }, key: 'resource1' }
+  const request2 = { input: { url: 'http://api.test/resource2' }, key: 'resource2' }
+  const fetchDriver = makeFetchDriver()
+  const request$ = Rx.Observable.of(request1, request2)
+  fetchDriver(request$)
+    .byUrl(request2.input.url)
+    .toArray()
+    .subscribe(
+      responses => {
+        t.equal(responses.length, 1)
+        t.equal(responses[0].data, 'resource2')
+        t.end()
+      },
+      t.error
+    )
+})
+
 test('after', t => {
   global.fetch = originalFetch
   t.end()
