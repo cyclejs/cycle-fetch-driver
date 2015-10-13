@@ -2,7 +2,7 @@
   "name": "@cycle/fetch",
   "version": "0.0.1",
   "description": "A Cycle.js Driver for making HTTP requests through fetch",
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "scripts": {
     "standard": "standard --global fetch",
     "pretest": "npm run standard",
