@@ -36,6 +36,7 @@ function main(responses) {
   let request$ = Rx.Observable.just(HELLO_URL);
   let vtree$ = responses.Fetch
     .byUrl(HELLO_URL)
+    .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
     .startWith('Loading...')
     .map(text =>
@@ -62,6 +63,7 @@ function main(responses) {
   });
   let vtree$ = responses.Fetch
     .byKey('hello')
+    .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
     .startWith('Loading...')
     .map(text =>
