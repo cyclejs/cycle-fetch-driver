@@ -1,6 +1,6 @@
 {
   "name": "@cycle/fetch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Cycle.js Driver for making HTTP requests through fetch",
   "main": "lib/index.js",
   "scripts": {
