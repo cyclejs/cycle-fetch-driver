@@ -1,6 +1,6 @@
 import test from 'tape'
+import Rx from 'rx'
 import { parse as parseUrl } from 'url'
-import { Rx } from '@cycle/core'
 import { makeFetchDriver } from '../src'
 
 const { onNext } = Rx.ReactiveTest
@@ -81,25 +81,22 @@ test('fetchDriver should support multiple requests', t => {
   const responses = requests.map(request => (
     { ticks: request.ticks + 120, value: request.value.split('/').pop() }
   ))
-  let expected = []
-  const request$ = scheduler.createHotObservable.apply(scheduler, requests.map(
-    request => onNext(request.ticks, request.value)
-  ))
+  const requestMessages = requests.map(request => onNext(request.ticks, request.value))
+  const request$ = scheduler.createHotObservable(...requestMessages)
   const oldFetch = global.fetch
   global.fetch = (url, init) => {
     const response = responses.shift()
-    expected.push(response)
     return scheduler.createResolvedPromise(response.ticks, response.value)
   }
   const fetchDriver = makeFetchDriver()
-  const { messages } = scheduler.startWithCreate(() => (
-    fetchDriver(request$)
+  const { messages } = scheduler.startScheduler(() => (
+    fetchDriver(request$, scheduler)
       .mergeAll()
   ))
   compareMessages(t, messages, [
-    onNext(420, 'resource1'),
-    onNext(520, 'resource2'),
-    onNext(620, 'resource1')
+    onNext(421, 'resource1'),
+    onNext(521, 'resource2'),
+    onNext(621, 'resource1')
   ])
   global.fetch = oldFetch
   t.end()

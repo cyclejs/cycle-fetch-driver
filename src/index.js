@@ -1,5 +1,5 @@
 import assign from 'object-assign'
-import { Rx } from '@cycle/core'
+import Rx from 'rx'
 
 function normalizeRequest (input) {
   let request = typeof input === 'string'
@@ -26,14 +26,14 @@ function byUrl (response$$, url) {
 }
 
 export function makeFetchDriver () {
-  return function fetchDriver (request$) {
+  return function fetchDriver (request$, scheduler) {
     let response$$ = new Rx.ReplaySubject(1)
     request$
       .map(normalizeRequest)
       .subscribe(
         request => {
           let { input, url, init } = request
-          let response$ = Rx.Observable.fromPromise(fetch(input || url, init))
+          let response$ = Rx.Observable.fromPromise(global.fetch(input || url, init), scheduler)
           response$.request = request
           response$$.onNext(response$)
         },
