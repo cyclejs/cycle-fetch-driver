@@ -1,10 +1,9 @@
-import assign from 'object-assign'
 import Rx from 'rx'
 
 function normalizeRequest (input) {
   let request = typeof input === 'string'
     ? { url: input }
-    : assign({}, input)
+    : { ...input }
   if (!request.key) {
     request.key = request.input && request.input.url || request.url
   }
