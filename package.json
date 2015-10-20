@@ -7,7 +7,7 @@
     "standard": "standard src",
     "pretest": "npm run standard",
     "test": "babel-node test/*.js | faucet",
-    "prepublish": "babel -d lib/ src/"
+    "prepublish": "mkdir -p lib && babel -d lib/ src/"
   },
   "repository": {
     "type": "git",
