@@ -8,6 +8,12 @@ A [Cycle.js](http://cycle.js.org) [Driver](http://cycle.js.org/drivers.html) for
 npm install @cycle/fetch
 ```
 
+## API
+
+### ```makeFetchDriver(scheduler: Scheduler) -> fetchDriver: function```
+
+Factory that returns a fetch driver. It takes an optional ```scheduler``` argument to pass into ```fromPromise```.
+
 ## Usage
 
 Basics:

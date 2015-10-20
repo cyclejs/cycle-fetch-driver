@@ -88,9 +88,9 @@ test('fetchDriver should support multiple requests', t => {
     const response = responses.shift()
     return scheduler.createResolvedPromise(response.ticks, response.value)
   }
-  const fetchDriver = makeFetchDriver()
+  const fetchDriver = makeFetchDriver(scheduler)
   const { messages } = scheduler.startScheduler(() => (
-    fetchDriver(request$, scheduler)
+    fetchDriver(request$)
       .mergeAll()
   ))
   compareMessages(t, messages, [

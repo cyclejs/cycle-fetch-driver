@@ -24,8 +24,9 @@ function byUrl (response$$, url) {
     })
 }
 
-export function makeFetchDriver () {
-  return function fetchDriver (request$, scheduler) {
+// scheduler option is for testing because Reactive-Extensions/RxJS#976
+export function makeFetchDriver (scheduler) {
+  return function fetchDriver (request$) {
     let response$$ = new Rx.ReplaySubject(1)
     request$
       .map(normalizeRequest)
