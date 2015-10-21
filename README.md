@@ -37,10 +37,10 @@ Cycle.run(main, drivers);
 Simple and normal use case:
 
 ```js
-function main(responses) {
+function main({ DOM, HTTP }) {
   const HELLO_URL = 'http://localhost:8080/hello';
-  let request$ = Rx.Observable.just(HELLO_URL);
-  let vtree$ = responses.Fetch
+  const request$ = Rx.Observable.just(HELLO_URL);
+  const vtree$ = HTTP
     .byUrl(HELLO_URL)
     .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
@@ -53,7 +53,7 @@ function main(responses) {
 
   return {
     DOM: vtree$,
-    Fetch: request$
+    HTTP: request$
   };
 }
 ```
@@ -61,13 +61,13 @@ function main(responses) {
 Select all the responses for a certain key:
 
 ```js
-function main(responses) {
+function main({ DOM, HTTP }) {
   const HELLO_URL = 'http://localhost:8080/hello';
-  let request$ = Rx.Observable.just({
+  const request$ = Rx.Observable.just({
     key: 'hello',
     url: HELLO_URL
   });
-  let vtree$ = responses.Fetch
+  const vtree$ = HTTP
     .byKey('hello')
     .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
@@ -80,7 +80,7 @@ function main(responses) {
 
   return {
     DOM: vtree$,
-    Fetch: request$
+    HTTP: request$
   };
 }
 ```
