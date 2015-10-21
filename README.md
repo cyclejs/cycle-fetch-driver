@@ -28,7 +28,7 @@ function main(responses) {
 }
 
 const drivers = {
-  Fetch: makeFetchDriver()
+  HTTP: makeFetchDriver()
 }
 
 Cycle.run(main, drivers);
@@ -40,7 +40,7 @@ Simple and normal use case:
 function main(responses) {
   const HELLO_URL = 'http://localhost:8080/hello';
   let request$ = Rx.Observable.just(HELLO_URL);
-  let vtree$ = responses.Fetch
+  let vtree$ = responses.HTTP
     .byUrl(HELLO_URL)
     .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
@@ -53,7 +53,7 @@ function main(responses) {
 
   return {
     DOM: vtree$,
-    Fetch: request$
+    HTTP: request$
   };
 }
 ```
@@ -67,7 +67,7 @@ function main(responses) {
     key: 'hello',
     url: HELLO_URL
   });
-  let vtree$ = responses.Fetch
+  let vtree$ = responses.HTTP
     .byKey('hello')
     .mergeAll()
     .flatMap(res => res.text()) // We expect this to be "Hello World"
@@ -80,7 +80,39 @@ function main(responses) {
 
   return {
     DOM: vtree$,
-    Fetch: request$
+    HTTP: request$
+  };
+}
+```
+
+With `input` and `init`:
+
+```js
+function main(responses) {
+  const HELLO_URL = 'http://localhost:8080/hello';
+  let request$ = Rx.Observable.just({
+    input: new Request(HELLO_URL),
+    init: {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/plain'
+      }
+    }
+  });
+  let vtree$ = responses.HTTP
+    .byUrl(HELLO_URL)
+    .mergeAll()
+    .flatMap(res => res.text()) // We expect this to be "Hello World"
+    .startWith('Loading...')
+    .map(text =>
+      h('div.container', [
+        h('h1', text)
+      ])
+    );
+
+  return {
+    DOM: vtree$,
+    HTTP: request$
   };
 }
 ```
