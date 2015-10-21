@@ -1,11 +1,15 @@
 import Rx from 'rx'
 
+function getUrl (request) {
+  return request.input && request.input.url || request.url
+}
+
 function normalizeRequest (input) {
-  let request = typeof input === 'string'
+  const request = typeof input === 'string'
     ? { url: input }
     : { ...input }
   if (!request.key) {
-    request.key = request.input && request.input.url || request.url
+    request.key = getUrl(request)
   }
   return request
 }
@@ -17,23 +21,19 @@ function byKey (response$$, key) {
 
 function byUrl (response$$, url) {
   return response$$
-    .filter(response$ => {
-      let request = response$.request
-      let inputUrl = request.input && request.input.url || request.url
-      return inputUrl === url
-    })
+    .filter(response$ => getUrl(response$.request) === url)
 }
 
 // scheduler option is for testing because Reactive-Extensions/RxJS#976
 export function makeFetchDriver (scheduler) {
   return function fetchDriver (request$) {
-    let response$$ = new Rx.ReplaySubject(1)
+    const response$$ = new Rx.ReplaySubject(1)
     request$
       .map(normalizeRequest)
       .subscribe(
         request => {
-          let { input, url, init } = request
-          let response$ = Rx.Observable.fromPromise(global.fetch(input || url, init), scheduler)
+          const { input, url, init } = request
+          const response$ = Rx.Observable.fromPromise(global.fetch(input || url, init), scheduler)
           response$.request = request
           response$$.onNext(response$)
         },
