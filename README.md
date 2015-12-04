@@ -28,7 +28,7 @@ function main(responses) {
 }
 
 const drivers = {
-  Fetch: makeFetchDriver()
+  HTTP: makeFetchDriver()
 }
 
 Cycle.run(main, drivers);
