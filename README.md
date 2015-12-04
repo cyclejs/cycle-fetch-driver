@@ -21,14 +21,14 @@ Basics:
 ```js
 import 'whatwg-fetch' // polyfill if you want to support older browsers
 import Cycle from '@cycle/core';
-import { makeFetchDriver } from 'cycle-fetch-driver';
+import { makeFetchDriver } from '@cycle/fetch';
 
 function main(responses) {
   // ...
 }
 
 const drivers = {
-  Fetch: makeFetchDriver()
+  HTTP: makeFetchDriver()
 }
 
 Cycle.run(main, drivers);
