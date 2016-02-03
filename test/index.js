@@ -201,6 +201,52 @@ test('byUrl should support input url', t => {
     )
 })
 
+test('isolateSource and isolateSink should exist on the HTTP Source (response$$)', t => {
+  setup()
+  const fetchDriver = makeFetchDriver()
+  const request$ = new Rx.Subject()
+  const response$$ = fetchDriver(request$)
+  t.ok(typeof response$$.isolateSource === 'function')
+  t.ok(typeof response$$.isolateSink === 'function')
+  t.end()
+})
+
+test('isolateSource and isolateSink should exist on a scoped HTTP Source (response$$)', t => {
+  setup()
+  const fetchDriver = makeFetchDriver()
+  const request$ = new Rx.Subject()
+  const response$$ = fetchDriver(request$)
+  const scopedRequest$ = response$$.isolateSink(request$, 'foo')
+  const scopedResponse$$ = response$$.isolateSource(response$$, 'foo')
+  t.ok(typeof scopedResponse$$.isolateSource === 'function')
+  t.ok(typeof scopedResponse$$.isolateSink === 'function')
+  t.end()
+})
+
+test('isolateSource and isolateSink should hide responses from outside the scope', t => {
+  setup()
+  const fetchDriver = makeFetchDriver()
+  const proxyRequest$ = new Rx.Subject()
+  const response$$ = fetchDriver(proxyRequest$)
+  const request1 = 'http://api.test/resource1'
+  const request2 = 'http://api.test/resource2'
+  const ignoredRequest$ = Rx.Observable.just(request1)
+  const request$ = Rx.Observable.just(request2).delay(10)
+  const scopedRequest$ = response$$.isolateSink(request$, 'foo')
+  const scopedResponse$$ = response$$.isolateSource(response$$, 'foo')
+  scopedResponse$$.subscribe(response$ => {
+    t.equal(typeof response$.request, 'object')
+    t.equal(response$.request.url, request2)
+    response$.subscribe(response => {
+      t.equal(response.status, 200)
+      t.equal(response.data, 'resource2')
+      t.end()
+    })
+  })
+  Rx.Observable.merge(ignoredRequest$, scopedRequest$)
+    .subscribe(proxyRequest$.asObserver())
+})
+
 test('after', t => {
   global.fetch = originalFetch
   t.end()

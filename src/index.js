@@ -24,6 +24,27 @@ function byUrl (response$$, url) {
     .filter(response$ => getUrl(response$.request) === url)
 }
 
+function isolateSink (request$, scope) {
+  return request$.map(request => {
+    if (typeof request === 'string') {
+      return { url: request, _namespace: [scope] }
+    }
+    request._namespace = request._namespace || []
+    request._namespace.push(scope)
+    return request
+  })
+}
+
+function isolateSource (response$$, scope) {
+  const isolatedResponse$$ = response$$.filter(response$ =>
+    Array.isArray(response$.request._namespace) &&
+    response$.request._namespace.indexOf(scope) !== -1
+  )
+  isolatedResponse$$.isolateSource = isolateSource
+  isolatedResponse$$.isolateSink = isolateSink
+  return isolatedResponse$$
+}
+
 // scheduler option is for testing because Reactive-Extensions/RxJS#976
 export function makeFetchDriver (scheduler) {
   return function fetchDriver (request$) {
@@ -42,6 +63,8 @@ export function makeFetchDriver (scheduler) {
       )
     response$$.byKey = byKey.bind(null, response$$)
     response$$.byUrl = byUrl.bind(null, response$$)
+    response$$.isolateSource = isolateSource
+    response$$.isolateSink = isolateSink
     return response$$
   }
 }
